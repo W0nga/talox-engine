@@ -41,6 +41,7 @@ st.markdown("""
     .slip-text-sub { font-size: 0.65rem; color: #64748b; text-transform: uppercase; margin-top: 2px; }
     .slip-odds-badge { font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 700; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 3px 8px; border-radius: 5px; }
     .slip-stake-display { font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; font-weight: 700; color: #34d399; }
+    .slip-stars { color: #fbbf24; font-size: 0.85rem; margin-top: 2px; }
     
     /* High Clarity Transparent Ledger Cards */
     .ledger-card { background: #091226; border: 1px solid #223254; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
@@ -100,13 +101,11 @@ def pull_active_sports_scoreboard():
         except Exception: continue
     return fixtures_list
 
-# PRE-INDEXED FALLBACK SLATE FOR UPCOMING TOURNAMENT GAMES
 UPCOMING_MARQUEE_GAMES = [
-    {"id": "mq_eng_arg", "label": "🏆 [WORLD CUP KNOCKOUT] England vs Argentina (Elite Stage)", "ta": "England", "tb": "Argentina", "sa": 0, "sb": 0, "status": "Scheduled"},
-    {"id": "mq_fra_esp", "label": "🏆 [EURO CHAMPIONSHIP] France vs Spain (Finals Slate)", "ta": "France", "tb": "Spain", "sa": 0, "sb": 0, "status": "Scheduled"}
+    {"id": "mq_eng_arg", "label": "🏆 [WORLD CUP KNOCKOUT] England vs Argentina", "ta": "England", "tb": "Argentina", "sa": 0, "sb": 0, "status": "Scheduled"},
+    {"id": "mq_fra_esp", "label": "🏆 [EURO CHAMPIONSHIP] France vs Spain", "ta": "France", "tb": "Spain", "sa": 0, "sb": 0, "status": "Scheduled"}
 ]
 
-# RENDER SEPARATED TAB MODULES FOR CLEAN SPORT SEPARATION
 st.markdown('<div class="talox-workspace-card">', unsafe_allow_html=True)
 st.markdown('<div class="talox-card-header">🎯 Target Environment Selection</div>', unsafe_allow_html=True)
 tab_live, tab_marquee, tab_sandbox = st.tabs(["📡 Live Data Feeds", "🏆 Marquee Tournament Fixtures", "🛠️ Custom Manual Sandbox"])
@@ -133,13 +132,55 @@ with tab_sandbox:
         team_a, team_b = parts[0].strip(), parts[1].strip()
 st.markdown('</div>', unsafe_allow_html=True)
 
-# STAKE PARSER SELECTION MODES
-with st.expander("📋 Stake.com Smart Paste Clipboard Parser", expanded=False):
-    raw_pasted_blob = st.text_area("Paste event overview raw text straight from Stake:")
-    scanned_odds = []
-    if raw_pasted_blob:
-        scanned_odds = [float(val) for val in re.findall(r"\b\d+\.\d{2}\b", raw_pasted_blob)]
-        if len(scanned_odds) >= 4: st.success(f"Parsed array matching layout slots: {scanned_odds[:4]}")
+# ADVANCED STAKE STRUCTURAL PARSER WITH CLIPBOARD AND TEXT INGESTION
+parsed_draw = None
+parsed_under_25 = None
+parsed_qualify_a = None
+parsed_qualify_b = None
+
+with st.expander("📋 Stake.com Smart Document & Text Parser Deck", expanded=True):
+    uploaded_text_file = st.file_uploader("Upload Market Log Ingestion Sheet (.txt format):", type=["txt"])
+    raw_pasted_blob = st.text_area("Or paste raw event text overview straight from Stake interface below:", height=150)
+    
+    combined_ingestion_text = ""
+    if uploaded_text_file is not None:
+        combined_ingestion_text = uploaded_text_file.read().decode("utf-8")
+    elif raw_pasted_blob:
+        combined_ingestion_text = raw_pasted_blob
+        
+    if combined_ingestion_text:
+        lines = [line.strip() for line in combined_ingestion_text.split("\n") if line.strip()]
+        
+        # Stateful Structural Parser Optimization
+        for idx, text_line in enumerate(lines):
+            # 1. Capture exact match for Draw line
+            if text_line.lower() == "draw" and idx + 1 < len(lines):
+                try: parsed_draw = float(lines[idx+1])
+                except: pass
+            
+            # 2. Capture Exact Match for To Qualify Lines
+            if "to qualify" in text_line.lower():
+                # Scan next 4 lines for structural pairs
+                for offset in range(1, 5):
+                    if idx + offset < len(lines):
+                        test_l = lines[idx + offset]
+                        if team_a.lower() in test_l.lower() and idx + offset + 1 < len(lines):
+                            try: parsed_qualify_a = float(lines[idx + offset + 1])
+                            except: pass
+                        if team_b.lower() in test_l.lower() and idx + offset + 1 < len(lines):
+                            try: parsed_qualify_b = float(lines[idx + offset + 1])
+                            except: pass
+
+            # 3. Capture Asian Under 2.5 Market lines cleanly
+            if text_line == "2.5" and idx + 1 < len(lines):
+                try:
+                    val_candidate = float(lines[idx+1])
+                    # In stake layouts, Under is usually the second occurrence or paired with lower odds
+                    if parsed_under_25 is None or val_candidate < parsed_under_25:
+                        parsed_under_25 = val_candidate
+                except: pass
+
+        st.success("✅ Structural optimization pass completed. Values successfully extracted.")
 
 # 3. CONTROL RISK PANEL PARAMETERS
 st.markdown('<div class="talox-workspace-card">', unsafe_allow_html=True)
@@ -151,27 +192,25 @@ with col_safeguard:
     protection_ratio = st.slider("Downside Capital Protection Floor (%)", min_value=10, max_value=100, value=90) / 100.0
 st.markdown('</div>', unsafe_allow_html=True)
 
-# MAP AND POPULATE INPUT VARIABLES
-base_o1 = scanned_odds[1] if len(scanned_odds) > 1 else 3.00   # 90M Full-Time Draw Line
-base_o2 = scanned_odds[6] if len(scanned_odds) > 6 else 1.59   # Total Under 2.5 Line
-base_o3 = scanned_odds[2] if len(scanned_odds) > 2 else 1.75   # Team A To Advance Line
-base_o4 = scanned_odds[3] if len(scanned_odds) > 3 else 2.04   # Team B To Advance Line
+# MAP AND POPULATE INPUT VARIABLES WITH INTELLIGENT PARSER FALLBACKS
+base_o1 = parsed_draw if parsed_draw is not None else 3.00
+base_o2 = parsed_under_25 if parsed_under_25 is not None else 1.61
+base_o3 = parsed_qualify_a if parsed_qualify_a is not None else 1.75
+base_o4 = parsed_qualify_b if parsed_qualify_b is not None else 2.04
 
 st.markdown('<div class="talox-workspace-card">', unsafe_allow_html=True)
 st.markdown('<div class="talox-card-header">📈 Core Market Matrix Line Inputs</div>', unsafe_allow_html=True)
 col_l1, col_l2 = st.columns(2)
 with col_l1:
-    o1 = st.number_input("Slot 1 Core: 90M Full-Time Draw", value=float(base_o1), step=0.01)
+    o1 = st.number_input("Slot 1 Core: 90M Full-Time Draw Line", value=float(base_o1), step=0.01)
     o3 = st.number_input(f"Slot 3 Floor: {team_a} To Advance", value=float(base_o3), step=0.01)
 with col_l2:
-    o2 = st.number_input("Slot 2 Core: Asian Total Under 2.5", value=float(base_o2), step=0.01)
+    o2 = st.number_input("Slot 2 Core: Asian Total Under 2.5 Line", value=float(base_o2), step=0.01)
     o4 = st.number_input(f"Slot 4 Floor: {team_b} To Advance", value=float(base_o4), step=0.01)
 st.markdown('</div>', unsafe_allow_html=True)
 
 # 4. BALANCED MATHEMATICAL ASSET RECOVERY CALCULATION LOOPS
 target_hedged_recovery = bankroll * protection_ratio
-
-# Hedges track separately because tournament rules dictate only ONE team can advance!
 stake3 = round(target_hedged_recovery / o3, 2)
 stake4 = round(target_hedged_recovery / o4, 2)
 remaining_working_capital = bankroll - stake3 - stake4
@@ -180,28 +219,38 @@ if remaining_working_capital > 0:
     stake1 = round(remaining_working_capital * 0.40, 2)
     stake2 = round(remaining_working_capital * 0.60, 2)
 else:
-    # Auto-Balance Safety sub-routine to keep active lanes open
     stake1 = round(bankroll * 0.15, 2)
     stake2 = round(bankroll * 0.25, 2)
     stake3 = round((bankroll * 0.35) / o3, 2)
     stake4 = round((bankroll * 0.25) / o4, 2)
 
+# Dynamic Confidence Evaluation Generator Loop (Out of 5 Stars)
+def calculate_lane_stars(odds, priority_tier):
+    if odds >= 2.50 and priority_tier == "core": return "⭐⭐⭐⭐⭐"
+    elif odds >= 1.80: return "⭐⭐⭐⭐"
+    elif odds >= 1.50: return "⭐⭐⭐"
+    return "⭐⭐"
+
 # 5. EXECUTABLE ALLOCATION WORKING SLIPS VISUALIZER
 st.subheader("📋 Executable Optimization Slips")
-def print_executable_slip(title, market_label, odds, final_wager):
+def print_executable_slip(title, market_label, odds, final_wager, star_rating):
     st.markdown(f"""
         <div class="betting-slip-module">
-            <div><div class="slip-text-main">{title}</div><div class="slip-text-sub">{market_label}</div></div>
+            <div>
+                <div class="slip-text-main">{title}</div>
+                <div class="slip-text-sub">{market_label}</div>
+                <div class="slip-stars">{star_rating}</div>
+            </div>
             <div style="display:flex; align-items:center; gap:14px;"><span class="slip-odds-badge">@{odds:.2f}</span><span class="slip-stake-display">${final_wager:.2f}</span></div>
         </div>
     """, unsafe_allow_html=True)
 
-print_executable_slip("Slot 1 Core Allocation", "90 Minute Regular Time Full-Time Match Draw", o1, stake1)
-print_executable_slip("Slot 2 Core Allocation", "Asian Total Goals Volume Under 2.5 Line", o2, stake2)
-print_executable_slip("Slot 3 Floor Allocation", f"{team_a} Tournament Outright To Advance Hedge", o3, stake3)
-print_executable_slip("Slot 4 Floor Allocation", f"{team_b} Tournament Outright To Advance Hedge", o4, stake4)
+print_executable_slip("Slot 1 Core Allocation", "90 Minute Regular Time Full-Time Match Draw", o1, stake1, calculate_lane_stars(o1, "core"))
+print_executable_slip("Slot 2 Core Allocation", "Asian Total Goals Volume Under 2.5 Line", o2, stake2, calculate_lane_stars(o2, "core"))
+print_executable_slip("Slot 3 Floor Allocation", f"{team_a} Tournament Outright To Advance Hedge", o3, stake3, calculate_lane_stars(o3, "floor"))
+print_executable_slip("Slot 4 Floor Allocation", f"{team_b} Tournament Outright To Advance Hedge", o4, stake4, calculate_lane_stars(o4, "floor"))
 
-# 6. HIGH-CLARITY TRANSPARENT SCENARIO LEDGER MATRIX (Solves Confusion)
+# 6. HIGH-CLARITY TRANSPARENT SCENARIO LEDGER MATRIX
 st.subheader("🎯 Exploded Portfolio Scenario Return Ledger")
 st.markdown("Review the complete financial breakdown below. **Total Return** is the gross cash sent back to your wallet (including stake), and **Net Profit** is your actual clear yield.")
 
@@ -226,22 +275,11 @@ def print_transparent_scenario_ledger(title, active_slots, dead_slots, total_wal
         </div>
     """, unsafe_allow_html=True)
 
-# ACCURATE MULTI-BET STACKED MATHEMATICAL VALUES
-# Scenario A (Low Scoring Draw 0-0, 1-1): Slot 1 and Slot 2 cash. 
-# In tournament play, either Team A or Team B must also advance. The matrix tracks using the minimum line to establish an absolute safety baseline.
 min_advancement_yield = min(stake3 * o3, stake4 * o4)
 wallet_a = (stake1 * o1) + (stake2 * o2) + min_advancement_yield
-
-# Scenario B (Home Defensive Under-Win 1-0, 2-0): Slot 2 and Slot 3 cash.
 wallet_b = (stake2 * o2) + (stake3 * o3)
-
-# Scenario C (Away Defensive Under-Win 0-1, 0-2): Slot 2 and Slot 4 cash.
 wallet_c = (stake2 * o2) + (stake4 * o4)
-
-# Scenario D (Home Outlier Blast 3-0, 3-1): Only Slot 3 cashes.
 wallet_d = (stake3 * o3)
-
-# Scenario E (Away Outlier Blast 0-3, 1-3): Only Slot 4 cashes.
 wallet_e = (stake4 * o4)
 
 print_transparent_scenario_ledger("🎯 Scenario A: Tactical Low Scoring Tie (0-0, 1-1 Regular Time)", [1, 2, "3 or 4"], [], wallet_a)
@@ -250,21 +288,16 @@ print_transparent_scenario_ledger(f"🛡️ Scenario C: Away Defensive Match Pro
 print_transparent_scenario_ledger(f"⚠️ Scenario D: Outlier High-Scoring Disruption ({team_a} Blowout 3-0+)", [3], [1, 2, 4], wallet_d)
 print_transparent_scenario_ledger(f"⚠️ Scenario E: Outlier High-Scoring Disruption ({team_b} Blowout 0-3+)", [4], [1, 2, 3], wallet_e)
 
-# 7. INTEGRATED EXPERT GEMINI COGNITIVE INTERFACE DECK
+# 7. INTEGRATED HYPER-CONCISE GEMINI INTERFACE DECK
 st.markdown("---")
 st.subheader("🧠 Gemini Core Intelligence Matrix Hub")
 
-# CONFIGURATION INGESTION MODES VIA SIDEBAR / APP OVERLAYS
 with st.expander("🔑 AI Synthesis Configuration (Gemini Engine Integration)", expanded=False):
     ai_secret_key = st.text_input("Provide your Google Gemini API Key:", type="password")
-    
-    # Model Selector to allow swapping in case of local server performance changes
     model_choice = st.selectbox(
         "Target Gemini Model:", 
-        options=["gemini-2.5-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"],
-        help="Change models if one experiences slow generation speeds or timeout issues on the Google Cloud Server."
+        options=["gemini-2.5-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"]
     )
-    confidence_bias = st.slider("Target Model Confidence Threshold (%)", min_value=10, max_value=100, value=85)
 
 if not ai_secret_key:
     st.info("💡 Input your Gemini API key in the configuration deck component above to unlock real-time predictive rationales.")
@@ -272,45 +305,36 @@ else:
     if st.button("Generate Matrix AI Prediction Rationale"):
         with st.spinner("Processing scenario parameters through predictive modeling pathways..."):
             
-            # Construct a clean analytical prompt mapping matrix statistics
+            # STRICT WORD COUNT AND FORMAT CONSTRAINTS TO ENFORCE A SHORT BULLETPROOF BRIEFING
             synthesis_prompt = f"""
-            You are TALOX AI, an expert quantitative sports risk analyst.
-            Synthesize a risk profile overview based on these active market parameters:
-            - Fixture Context: {team_a} vs {team_b} (Current Status: {match_status})
-            - Target Base Bankroll: ${bankroll}
-            - Slot 1 Odds (Draw): {o1} (Allocation Stake: ${stake1})
-            - Slot 2 Odds (Under 2.5): {o2} (Allocation Stake: ${stake2})
-            - Slot 3 Odds ({team_a} Advance): {o3} (Allocation Stake: ${stake3})
-            - Slot 4 Odds ({team_b} Advance): {o4} (Allocation Stake: ${stake4})
+            You are TALOX AI. Write a brief, hyper-condensed risk brief for:
+            {team_a} vs {team_b}. 
+            Total Allocation Bankroll: ${bankroll}.
+            Slot 1 (Draw): {o1}. Slot 2 (Under 2.5): {o2}. Slot 3 ({team_a} Qualify): {o3}. Slot 4 ({team_b} Qualify): {o4}.
             
-            Format your final response cleanly with these explicit Markdown sections:
-            1. **Predictive Core Rationale**: Break down the structural logic behind allocating capital into these exact defensive lines.
-            2. **Confidence Metric Evaluation**: Detail the model confidence parameters based on market distributions.
-            3. **Risk Profile Variance**: Identify outlier game scripts that require active monitoring.
-            
-            Keep your analysis highly professional, precise, and objective. Avoid generic introductory text.
+            CRITICAL INSTRUCTION: Your entire response must be under 120 words total. Do not include intros, conversational pleasantries, or conclusions. Use 2-3 sentence bullets for:
+            - **Tactical Rationale**: Why this allocation setup makes sense.
+            - **Outlier Risk**: The main dangerous script to monitor.
             """
             
             try:
-                # Direct HTTP Request payload mapping to the Google Gemini AI Studio endpoint
                 endpoint_target = f"https://generativelanguage.googleapis.com/v1beta/models/{model_choice}:generateContent?key={ai_secret_key}"
                 request_payload = {"contents": [{"parts": [{"text": synthesis_prompt}]}]}
                 request_headers = {"Content-Type": "application/json"}
                 
-                # Increased timeout to 30 seconds to completely eliminate ReadTimeout anomalies
                 api_response = requests.post(endpoint_target, data=json.dumps(request_payload), headers=request_headers, timeout=30)
                 
                 if api_response.status_code == 200:
                     ai_content = api_response.json()['candidates'][0]['content']['parts'][0]['text']
                     st.markdown(f"""
                         <div class="talox-workspace-card" style="border-color:#a855f7; background:#0c091a;">
-                            <div class="talox-card-header" style="color:#c084fc;">🔮 Gemini Real-Time Synthesis Deck ({model_choice})</div>
-                            <div style="font-size:0.88rem; line-height:1.6; color:#cbd5e1;">{ai_content}</div>
+                            <div class="talox-card-header" style="color:#c084fc;">🔮 Gemini Strategic Briefing ({model_choice})</div>
+                            <div style="font-size:0.88rem; line-height:1.5; color:#cbd5e1;">{ai_content}</div>
                         </div>
                     """, unsafe_allow_html=True)
                 else:
                     st.error(f"Gemini interface connectivity error. Server code: {api_response.status_code}")
             except requests.exceptions.Timeout:
-                st.error("⏳ The API request timed out! Google's server is taking longer than 30 seconds to generate content. Try switching the 'Target Gemini Model' in the dropdown above to 'gemini-3.1-flash-lite' for faster generation.")
+                st.error("⏳ Server response latency threshold reached. Try selecting 'gemini-3.1-flash-lite' for faster generation.")
             except Exception as system_fault:
                 st.error(f"AI Matrix configuration anomaly identified: {str(system_fault)}")
