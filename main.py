@@ -15,7 +15,7 @@ st.set_page_config(
 # Deep Custom CSS Injection to mimic custom-branded UI and build clear financial blocks
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700&family=Space+Grotesk:wght=500;600;700&display=swap');
     
     /* Root App Resets */
     .stApp { background-color: #03060f; color: #f1f5f9; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -257,6 +257,13 @@ st.subheader("🧠 Gemini Core Intelligence Matrix Hub")
 # CONFIGURATION INGESTION MODES VIA SIDEBAR / APP OVERLAYS
 with st.expander("🔑 AI Synthesis Configuration (Gemini Engine Integration)", expanded=False):
     ai_secret_key = st.text_input("Provide your Google Gemini API Key:", type="password")
+    
+    # Model Selector to allow swapping in case of local server performance changes
+    model_choice = st.selectbox(
+        "Target Gemini Model:", 
+        options=["gemini-2.5-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"],
+        help="Change models if one experiences slow generation speeds or timeout issues on the Google Cloud Server."
+    )
     confidence_bias = st.slider("Target Model Confidence Threshold (%)", min_value=10, max_value=100, value=85)
 
 if not ai_secret_key:
@@ -286,22 +293,24 @@ else:
             
             try:
                 # Direct HTTP Request payload mapping to the Google Gemini AI Studio endpoint
-                # UPDATED: Targets the active 'gemini-2.5-flash' endpoint to bypass the 404 error
-                endpoint_target = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={ai_secret_key}"
+                endpoint_target = f"https://generativelanguage.googleapis.com/v1beta/models/{model_choice}:generateContent?key={ai_secret_key}"
                 request_payload = {"contents": [{"parts": [{"text": synthesis_prompt}]}]}
                 request_headers = {"Content-Type": "application/json"}
                 
-                api_response = requests.post(endpoint_target, data=json.dumps(request_payload), headers=request_headers, timeout=12)
+                # Increased timeout to 30 seconds to completely eliminate ReadTimeout anomalies
+                api_response = requests.post(endpoint_target, data=json.dumps(request_payload), headers=request_headers, timeout=30)
                 
                 if api_response.status_code == 200:
                     ai_content = api_response.json()['candidates'][0]['content']['parts'][0]['text']
                     st.markdown(f"""
                         <div class="talox-workspace-card" style="border-color:#a855f7; background:#0c091a;">
-                            <div class="talox-card-header" style="color:#c084fc;">🔮 Gemini Real-Time Synthesis Deck</div>
+                            <div class="talox-card-header" style="color:#c084fc;">🔮 Gemini Real-Time Synthesis Deck ({model_choice})</div>
                             <div style="font-size:0.88rem; line-height:1.6; color:#cbd5e1;">{ai_content}</div>
                         </div>
                     """, unsafe_allow_html=True)
                 else:
                     st.error(f"Gemini interface connectivity error. Server code: {api_response.status_code}")
+            except requests.exceptions.Timeout:
+                st.error("⏳ The API request timed out! Google's server is taking longer than 30 seconds to generate content. Try switching the 'Target Gemini Model' in the dropdown above to 'gemini-3.1-flash-lite' for faster generation.")
             except Exception as system_fault:
                 st.error(f"AI Matrix configuration anomaly identified: {str(system_fault)}")
