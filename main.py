@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
+import requests
 
-# 1. Premium Visual Configuration
+# 1. Premium Mobile Design Engine
 st.set_page_config(
     page_title="TALOX | Quantitative Engine",
     page_icon="⚡",
@@ -9,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Injecting Custom CSS to re-create the dark UI card profiles from your dashboard mockups
+# Custom dark-theme styling blocks matching your dashboard layouts
 st.markdown("""
     <style>
     .reportview-container { background: #0b0e14; }
@@ -29,71 +30,132 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. System Headers
-st.title("🎛️ TALOX Risk Management Engine")
-st.caption("Core Portfolio Controller v2.1 | Simulation Mode Active")
+# 2. Base API Connectivity Function
+@st.cache_data(ttl=120)  # Caches matches for 2 mins so your phone doesn't spam the endpoint on every slider change
+def fetch_espn_live_fixtures(sport, league):
+    url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15"
+    }
+    try:
+        response = requests.get(url, headers=headers, timeout=8)
+        if response.status_code == 200:
+            events = response.json().get("events", [])
+            cleaned_fixtures = []
+            for event in events:
+                match_id = event.get("id")
+                match_name = event.get("name")
+                status = event.get("status", {}).get("type", {}).get("description")
+                
+                # Safely extract competing team display profiles
+                competitions = event.get("competitions", [{}])
+                competitors = competitions[0].get("competitors", [])
+                
+                # Handle baseline sorting labels safely
+                team_a = "Team A"
+                team_b = "Team B"
+                if len(competitors) >= 2:
+                    team_a = competitors[1].get("team", {}).get("displayName", "Team A")
+                    team_b = competitors[0].get("team", {}).get("displayName", "Team B")
+                
+                cleaned_fixtures.append({
+                    "id": match_id,
+                    "display_name": f"⏱️ [{status}] {match_name}",
+                    "team_a": team_a,
+                    "team_b": team_b
+                })
+            return cleaned_fixtures
+    except Exception:
+        return []
+    return []
 
-# 3. Dynamic Sport Archetype Matrix Dictionary
+# 3. System App Header Setup
+st.title("🎛️ TALOX Risk Management Engine")
+st.caption("Live Automated Data Pipeline Enabled | v2.5")
+
+# 4. Multi-Sport Environment Map
 SPORT_PROFILES = {
     "⚽ Soccer: Tournament Knockout": {
-        "slot1": "1X2 Match Draw",
-        "slot2": "Asian Total Under 2.5",
-        "slot3": "Team A to Qualify",
-        "slot4": "Team B to Qualify"
+        "sport": "soccer", "league": "fifa.world",
+        "slot1": "1X2 Match Draw", "slot2": "Asian Total Under 2.5",
+        "slot3": "to Qualify", "slot4": "to Qualify"
     },
-    "⚽ Soccer: Regular Season League": {
-        "slot1": "1X2 Match Draw",
-        "slot2": "Both Teams to Score: No",
-        "slot3": "Team A Win to Nil",
-        "slot4": "Team B Win to Nil"
+    "⚽ Soccer: English Premier League": {
+        "sport": "soccer", "league": "eng.1",
+        "slot1": "1X2 Match Draw", "slot2": "Both Teams to Score: No",
+        "slot3": "Win to Nil", "slot4": "Win to Nil"
     },
-    "🏀 Basketball: NBA Slate": {
-        "slot1": "Alternative Spread Corridor (1-4 Pts)",
-        "slot2": "Alternative Match Under",
-        "slot3": "Team A Moneyline",
-        "slot4": "Team B Moneyline"
+    "🏀 Basketball: NBA Fixtures": {
+        "sport": "basketball", "league": "nba",
+        "slot1": "Spread Corridor (1-4 Pts)", "slot2": "Alternative Match Under",
+        "slot3": "Moneyline", "slot4": "Moneyline"
     }
 }
 
-# 4. User Configuration Controls
+# 5. Core Configurations
 st.subheader("⚙️ Portfolio Parameterization")
-selected_profile = st.selectbox("Select Target Market Archetype", list(SPORT_PROFILES.keys()))
-active_slots = SPORT_PROFILES[selected_profile]
+selected_profile = st.selectbox("Target Archetype Matrix", list(SPORT_PROFILES.keys()))
+active_config = SPORT_PROFILES[selected_profile]
 
+# Fetching Data live via ESPN network call
+live_games = fetch_espn_live_fixtures(active_config["sport"], active_config["league"])
+
+# Setup match selection component parameters
+team_a_name = "Team A"
+team_b_name = "Team B"
+
+if live_games:
+    selected_game = st.selectbox(
+        "Select Active ESPN Event Feed", 
+        options=live_games, 
+        format_func=lambda x: x["display_name"]
+    )
+    team_a_name = selected_game["team_a"]
+    team_b_name = selected_game["team_b"]
+    st.success(f"🎯 Connected to Live Stream: **{team_a_name}** vs **{team_b_name}**")
+else:
+    st.warning("⚠️ No active games found on ESPN endpoint. Defaulting to manual entries.")
+    manual_input = st.text_input("Manual Match Title", value="England vs Argentina")
+    if "vs" in manual_input:
+        splits = manual_input.split("vs")
+        team_a_name = splits[0].strip()
+        team_b_name = splits[1].strip()
+
+# Base Allocation Parameters
 col_bankroll, col_floor = st.columns(2)
 with col_bankroll:
     total_bankroll = st.number_input("Total Portfolio Capital ($)", min_value=1.0, value=30.0, step=5.0)
 with col_floor:
     protection_floor = st.slider("Hedge Floor Protection (%)", min_value=10, max_value=50, value=35) / 100.0
 
-# 5. Dynamic Market Odds Ingestion Slots
-st.subheader("📈 Live Market Odds Feed")
+# Dynamic Slot Title Generation based on current parameters
+slot3_title = f"{team_a_name} {active_config['slot3']}"
+slot4_title = f"{team_b_name} {active_config['slot4']}"
+
+# 6. Odds Feeds Entry Blocks
+st.subheader("📈 Real-Time Odds Entry")
 c1, c2 = st.columns(2)
 with c1:
-    o1 = st.number_input(f"Odds: {active_slots['slot1']}", min_value=1.01, value=3.00, step=0.05)
-    o3 = st.number_input(f"Odds: {active_slots['slot3']}", min_value=1.01, value=1.75, step=0.05)
+    o1 = st.number_input(f"Odds: {active_config['slot1']}", min_value=1.01, value=3.00, step=0.05)
+    o3 = st.number_input(f"Odds: {slot3_title}", min_value=1.01, value=1.75, step=0.05)
 with c2:
-    o2 = st.number_input(f"Odds: {active_slots['slot2']}", min_value=1.01, value=1.59, step=0.05)
-    o4 = st.number_input(f"Odds: {active_slots['slot4']}", min_value=1.01, value=2.04, step=0.05)
+    o2 = st.number_input(f"Odds: {active_config['slot2']}", min_value=1.01, value=1.59, step=0.05)
+    o4 = st.number_input(f"Odds: {slot4_title}", min_value=1.01, value=2.04, step=0.05)
 
-# 6. Quantitative Optimization Engine Math
-# Calculate safe capital floors for protection hedges
+# 7. Portfolio Mathematical Distribution Calculations
 stake3 = round((total_bankroll * protection_floor) / o3, 2)
 stake4 = round((total_bankroll * protection_floor) / o4, 2)
-
-# Distribute remaining resource allocation across primary strategic engines
 remaining_capital = total_bankroll - stake3 - stake4
 
 if remaining_capital > 0:
-    # 60/40 structural split prioritizing the direct score environment constraint
     stake1 = round(remaining_capital * 0.40, 2)
     stake2 = round(remaining_capital * 0.60, 2)
 else:
     stake1, stake2 = 0.0, 0.0
-    st.error("Hedge floor protection configurations exceed total available portfolio capital. Lower the protection slider.")
+    st.error("Hedge configurations exceed available portfolio capital limit.")
 
-# 7. Rendering Dynamic Visual Cards
-st.subheader("📋 Executable Optimization Slips")
+# 8. Render Mobile Visual Slips
+st.subheader("📋 Executable Portfolio Slips")
 
 def render_card(title, odds, stake):
     st.markdown(f"""
@@ -104,32 +166,27 @@ def render_card(title, odds, stake):
         </div>
     """, unsafe_allow_html=True)
 
-render_card(active_slots["slot1"], o1, stake1)
-render_card(active_slots["slot2"], o2, stake2)
-render_card(active_slots["slot3"], o3, stake3)
-render_card(active_slots["slot4"], o4, stake4)
+render_card(active_config["slot1"], o1, stake1)
+render_card(active_config["slot2"], o2, stake2)
+render_card(slot3_title, o3, stake3)
+render_card(slot4_title, o4, stake4)
 
-# 8. Scenario Matrix Projections
+# 9. Yield Risk Assessment Projection Matrix Output
 st.markdown("---")
-st.subheader("🎯 Scenario Performance Matrix")
+st.subheader("🎯 Scenario Matrix Returns")
 
-# Calculate mathematical performance vectors based on game scripts
-p_draw_cagey = round((stake1 * o1) + (stake2 * o2) - total_bankroll, 2)
-p_defensive_win = round((stake2 * o2) + (stake3 * o3) - total_bankroll, 2)
-p_outlier_blowout = round((stake4 * o4) - total_bankroll, 2)
+p_target_hit = round((stake1 * o1) + (stake2 * o2) - total_bankroll, 2)
+p_defensive = round((stake2 * o2) + (stake3 * o3) - total_bankroll, 2)
+p_blowout = round((stake4 * o4) - total_bankroll, 2)
 
 metrics_df = pd.DataFrame({
     "Tactical Match Scenario Script": [
-        "Strategic Target Met (Both Core Slots Hit)", 
+        "Strategic Target Met (Core Matrix Wins)", 
         "Defensive Game Flow (Baseline + Floor A)", 
-        "Outlier Script Deviation (Floor B Only)"
+        "Outlier Script Deviation (Floor B Triggers)"
     ],
-    "Net Simulation P&L": [f"${p_draw_cagey:+.2f}", f"${p_defensive_win:+.2f}", f"${p_outlier_blowout:+.2f}"],
-    "Expected Yield Profile": [
-        "🚀 Maximum Target Met", 
-        "🛡️ Capital Preserved", 
-        "⚠️ Risk Mitigation Triggered"
-    ]
+    "Net Simulation P&L": [f"${p_target_hit:+.2f}", f"${p_defensive:+.2f}", f"${p_blowout:+.2f}"],
+    "Expected Yield Profile": ["🚀 Maximum Target Met", "🛡️ Capital Preserved", "⚠️ Risk Mitigation Active"]
 })
 
 st.table(metrics_df)
