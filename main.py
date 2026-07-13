@@ -3,260 +3,296 @@ import pandas as pd
 import requests
 import re
 
-# 1. PREMIUM NEON-DARK SYSTEM DESIGN (TALOX CONFIGURATION)
+# 1. TRANSMUTE INTERFACE TO PREMIUM OLED-DARK VIEW
 st.set_page_config(
-    page_title="TALOX | Quantitative Dashboard",
+    page_title="TALOX Quant Engine",
     page_icon="⚡",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# Custom premium styling framework to completely mask standard Streamlit blocks
+# Bespoke UI Injection Stylesheet to strip Streamlit defaults and enforce native-app aesthetic
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
     
-    /* Global Overrides */
-    .stApp { background-color: #0d1117; color: #c9d1d9; font-family: 'Inter', sans-serif; }
-    h1, h2, h3 { color: #f0f6fc !important; font-weight: 700 !important; letter-spacing: -0.02em; }
+    /* Core Layout Customizations */
+    .stApp { background-color: #05070a; color: #e2e8f0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    [data-testid="block-container"] { padding: 1.5rem 1rem; }
+    [data-testid="stHeader"], footer { display: none !important; } /* Hides Streamlit branding */
     
-    /* Metric Card Styling */
-    .talox-metric-box {
-        background: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    /* Title Banner Customization */
+    .talox-brand-header {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.7rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #00bfff, #00ffaa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.03em;
+        margin-bottom: 2px;
     }
-    .metric-val-green { color: #238636; font-size: 2rem; font-family: 'JetBrains Mono', monospace; font-weight: 700; }
     
-    /* Betting Slip Cards */
-    .slip-container {
-        background: #161b22;
-        border-left: 4px solid #1f6feb;
-        border-top: 1px solid #30363d;
-        border-right: 1px solid #30363d;
-        border-bottom: 1px solid #30363d;
-        border-radius: 0px 12px 12px 0px;
+    /* Premium Frost Glass Cards */
+    .talox-card {
+        background: linear-gradient(135deg, #0e131f 0%, #0c101a 100%);
+        border: 1px solid #1e293b;
+        border-radius: 14px;
         padding: 16px;
-        margin-bottom: 14px;
+        margin-bottom: 12px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     }
-    .slip-header { font-size: 0.85rem; color: #8b949e; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; }
-    .slip-odds { float: right; background: #388bfd26; color: #58a6ff; padding: 2px 8px; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-weight: bold; }
-    .slip-stake { font-size: 1.3rem; color: #56d364; font-family: 'JetBrains Mono', monospace; font-weight: 700; margin-top: 6px; }
     
-    /* Live Status Badges */
-    .badge-live { background: #da363326; color: #f85149; border: 1px solid #f85149; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-    .badge-ft { background: #21262d; color: #8b949e; border: 1px solid #30363d; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-    .badge-condition { background: #23863626; color: #56d364; border: 1px solid #238636; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: inline-block; margin: 4px 2px; }
-    .badge-broken { background: #da363326; color: #f85149; border: 1px solid #da3633; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; display: inline-block; margin: 4px 2px; }
+    /* Neon KPIs */
+    .kpi-container { display: flex; gap: 10px; margin-bottom: 16px; }
+    .kpi-box {
+        flex: 1;
+        background: #090d16;
+        border: 1px solid #1a2333;
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+    }
+    .kpi-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 600; }
+    .kpi-val { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; font-weight: 700; color: #ffaa00; margin-top: 4px; }
     
-    /* Matrix Table */
-    .matrix-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #21262d; align-items: center; }
-    .matrix-win { color: #56d364; font-family: 'JetBrains Mono', monospace; font-weight: 700; }
-    .matrix-loss { color: #f85149; font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+    /* Portfolio Custom Slip Modules */
+    .slip-wrapper {
+        background: #0d1220;
+        border-left: 4px solid #00bfff;
+        border-top: 1px solid #1e293b;
+        border-right: 1px solid #1e293b;
+        border-bottom: 1px solid #1e293b;
+        border-radius: 4px 14px 14px 4px;
+        padding: 14px;
+        margin-bottom: 10px;
+    }
+    .slip-top { display: flex; justify-content: space-between; align-items: center; }
+    .slip-tag { font-size: 0.75rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
+    .slip-odds { font-family: 'Space Grotesk', sans-serif; background: rgba(0, 191, 255, 0.15); color: #00bfff; font-size: 0.9rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+    .slip-amt { font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; font-weight: 700; color: #00ffaa; margin-top: 6px; }
+    
+    /* Live Tracker State Items */
+    .live-status-bar {
+        display: flex; justify-content: space-between; align-items: center;
+        background: rgba(255, 68, 68, 0.08); border: 1px solid rgba(255, 68, 68, 0.2);
+        border-radius: 10px; padding: 10px 14px; margin-bottom: 16px;
+    }
+    .pulse-dot { width: 8px; height: 8px; background-color: #ff4444; border-radius: 50%; display: inline-block; margin-right: 6px; animate: pulse 1.5s infinite; }
+    .badge-pass { background: rgba(0, 255, 170, 0.12); color: #00ffaa; border: 1px solid rgba(0, 255, 170, 0.3); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; }
+    .badge-fail { background: rgba(255, 68, 68, 0.12); color: #ff4444; border: 1px solid rgba(255, 68, 68, 0.3); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; }
+    
+    /* Custom Scenario Grid Row */
+    .matrix-row {
+        display: flex; justify-content: space-between; align-items: center;
+        background: #0a0e17; border: 1px solid #141b29; border-radius: 8px;
+        padding: 12px; margin-bottom: 8px;
+    }
+    .yield-green { color: #00ffaa; font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+    .yield-red { color: #ff4444; font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+    
+    /* Streamlit Components Dark Adjustment overrides */
+    div[data-testid="stExpander"] { background: #0e131f; border: 1px solid #1e293b; border-radius: 12px; }
+    div[data-widget="stSelectbox"] { background-color: #0e131f; }
+    input { background-color: #070a12 !important; color: #ffffff !important; border: 1px solid #1e293b !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# 2. DYNAMIC BROAD ENDPOINT AGGREGATOR (Resolves Missing Games Issue)
-@st.cache_data(ttl=60)
-def aggregate_global_fixtures():
-    # Queries multiple major football endpoints simultaneously to catch all primary matches
-    leagues = ["eng.1", "fifa.world", "uefa.euro", "global", "esp.1", "ita.1"]
-    aggregated_games = []
-    seen_ids = set()
+# 2. DATA PIPELINE: AGGREGATE BROAD GLOBAL FIXTURES (Solves Missing Match Issue)
+@st.cache_data(ttl=30)
+def pull_global_live_data():
+    target_leagues = ["eng.1", "fifa.world", "uefa.euro", "global", "esp.1", "ita.1"]
+    discovered_fixtures = []
+    registered_ids = set()
+    req_headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15"}
     
-    headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15"}
-    
-    for lg in leagues:
+    for league_slug in target_leagues:
         try:
-            url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{lg}/scoreboard"
-            res = requests.get(url, headers=headers, timeout=5)
-            if res.status_code == 200:
-                events = res.json().get("events", [])
-                for e in events:
-                    match_id = e.get("id")
-                    if match_id in seen_ids:
+            endpoint = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{league_slug}/scoreboard"
+            api_response = requests.get(endpoint, headers=req_headers, timeout=4)
+            if api_response.status_code == 200:
+                events_list = api_response.json().get("events", [])
+                for match_node in events_list:
+                    unique_id = match_node.get("id")
+                    if unique_id in registered_ids:
                         continue
                     
-                    match_name = e.get("name")
-                    status_node = e.get("status", {})
-                    status_desc = status_node.get("type", {}).get("description", "")
-                    period = status_node.get("period", 0)
-                    display_clock = status_node.get("displayClock", "")
+                    match_title = match_node.get("name")
+                    status_block = match_node.get("status", {})
+                    current_status = status_block.get("type", {}).get("description", "")
+                    game_clock = status_block.get("displayClock", "")
                     
-                    # Score Processing Nodes
-                    competitions = e.get("competitions", [{}])
-                    competitors = competitions[0].get("competitors", [])
+                    competition_node = match_node.get("competitions", [{}])[0]
+                    teams_array = competition_node.get("competitors", [])
                     
-                    t1_name, t2_name = "Team A", "Team B"
-                    t1_score, t2_score = 0, 0
+                    home_team, away_team = "Team A", "Team B"
+                    home_score, away_score = 0, 0
                     
-                    if len(competitors) >= 2:
-                        # ESPN ordered listing mapping (Away Team usually index 0, Home index 1)
-                        t1_name = competitors[1].get("team", {}).get("displayName", "Team A")
-                        t2_name = competitors[0].get("team", {}).get("displayName", "Team B")
-                        t1_score = int(competitors[1].get("score", 0))
-                        t2_score = int(competitors[0].get("score", 0))
+                    if len(teams_array) >= 2:
+                        home_team = teams_array[1].get("team", {}).get("displayName", "Team A")
+                        away_team = teams_array[0].get("team", {}).get("displayName", "Team B")
+                        home_score = int(teams_array[1].get("score", 0))
+                        away_score = int(teams_array[0].get("score", 0))
                     
-                    # Create clean display string for mobile dropdown menu
-                    time_label = f"({display_clock})" if period > 0 and status_desc != "Final" else f"[{status_desc}]"
-                    display_line = f"{time_label} {t1_name} {t1_score} - {t2_score} {t2_name}"
+                    time_prefix = f"⏱️ ({game_clock})" if current_status == "In Progress" else f"[{current_status}]"
+                    menu_string = f"{time_prefix} {home_team} {home_score} - {away_score} {away_team}"
                     
-                    aggregated_games.append({
-                        "id": match_id,
-                        "display": display_line,
-                        "team_a": t1_name,
-                        "team_b": t2_name,
-                        "score_a": t1_score,
-                        "score_b": t2_score,
-                        "status": status_desc
+                    discovered_fixtures.append({
+                        "id": unique_id,
+                        "display": menu_string,
+                        "t_a": home_team, "t_b": away_team,
+                        "s_a": home_score, "s_b": away_score,
+                        "status": current_status
                     })
-                    seen_ids.add(match_id)
+                    registered_ids.add(unique_id)
         except Exception:
             continue
-            
-    return aggregated_games
+    return discovered_fixtures
 
-# 3. HELPER FUNCTION: STAKE TEXT CLIPBOARD PARSER
-def parse_stake_clipboard(text):
-    """ Parses out raw odds arrays when pasting blocks direct from Stake.com """
-    odds_found = re.findall(r"\b\d+\.\d{2}\b", text)
-    extracted = [float(o) for o in odds_found]
-    return extracted
+# 3. HELPER FUNCTION: STAKE PDF TEXT COPIER REGEX PARSER
+def run_stake_text_parser(user_blob):
+    found_decimals = re.findall(r"\b\d+\.\d{2}\b", user_blob)
+    return [float(val) for val in found_decimals]
 
-# --- RENDER MAIN INTERFACE ---
-st.title("⚡ TALOX QUANT ENGINE")
-st.caption("Active Production Matrix Framework | Real-Time Liquidity Systems")
+# --- UI APP RENDER ENGINE ---
+st.markdown('<div class="talox-brand-header">TALOX QUANT MANAGEMENT</div>', unsafe_allow_html=True)
+st.markdown('<div style="font-size:0.8rem; color:#64748b; margin-bottom:14px;">PRO-TIER ALGORITHMIC SEED PORTFOLIOS</div>', unsafe_allow_html=True)
 
-# STAKE CLIPBOARD PARSER CONTAINER
-with st.expander("📋 Fast Import: Paste Data from Stake.com", expanded=False):
-    paste_data = st.text_area("Paste text copied from Stake match page here:")
-    parsed_odds = []
-    if paste_data:
-        parsed_odds = parse_stake_clipboard(paste_data)
-        if len(parsed_odds) >= 4:
-            st.success(f"Found active matrix odds in text: {parsed_odds[:4]}")
-        else:
-            st.info(f"Scanning text... Detected values: {parsed_odds}")
+# EXPANDER CAPABILITY: PASTE DIRECTLY FROM STAKE
+with st.expander("📋 Stake.com Data Import Parser", expanded=False):
+    raw_pasted_text = st.text_area("Paste text copied from your Stake interface page:")
+    scanned_odds_array = []
+    if raw_pasted_text:
+        scanned_odds_array = run_stake_text_parser(raw_pasted_text)
+        if len(scanned_odds_array) >= 4:
+            st.success(f"Successfully extracted odds grid: {scanned_odds_array[:4]}")
 
-# FETCH DATA PIPELINE
-live_pool = aggregate_global_fixtures()
+# RECOVERY API INGESTION NODE
+live_match_feed = pull_global_live_data()
 
-st.subheader("🏁 Live Match Environment")
-if live_pool:
-    selected_obj = st.selectbox("Select Active Match Target Feed", options=live_pool, format_func=lambda x: x["display"])
-    team_a = selected_obj["team_a"]
-    team_b = selected_obj["team_b"]
-    score_a = selected_obj["score_a"]
-    score_b = selected_obj["score_b"]
-    match_status = selected_obj["status"]
+if live_match_feed:
+    selected_match_record = st.selectbox("Active Stream Event Target", options=live_match_feed, format_func=lambda x: x["display"])
+    team_a = selected_match_record["t_a"]
+    team_b = selected_match_record["t_b"]
+    score_a = selected_match_record["s_a"]
+    score_b = selected_match_record["s_b"]
+    live_state = selected_match_record["status"]
 else:
-    st.warning("No active league fixtures fetched. Utilizing default testing workspace.")
+    st.warning("Data feeds inactive. Using standard fallback baseline.")
     team_a, team_b = "England", "Argentina"
     score_a, score_b = 0, 0
-    match_status = "Scheduled"
+    live_state = "Scheduled"
 
-# PORTFOLIO CAPITAL ASSIGNMENTS
-col_b, col_f = st.columns(2)
-with col_b:
-    bankroll = st.number_input("Portfolio Allocation Base ($)", min_value=5.0, value=30.0, step=1.0)
-with col_f:
-    risk_floor = st.slider("Downside Floor Protection Target (%)", min_value=50, max_value=100, value=90) / 100.0
+# REAL-TIME KPI SYSTEM DATA LAYOUT
+st.markdown('<div class="kpi-container">', unsafe_allow_html=True)
+st.markdown(f"""
+    <div class="kpi-box"><div class="kpi-label">Active Event Target</div><div class="kpi-val" style="color:#00bfff; font-size:1rem;">{team_a} vs {team_b}</div></div>
+    <div class="kpi-box"><div class="kpi-label">Live Standing Score</div><div class="kpi-val" style="color:#ffffff;">{score_a} - {score_b}</div></div>
+""", unsafe_allow_html=True)
 
-# ASSIGN INITIAL INPUT VALS FROM PARSER OR FALLBACK DEFAULTS
-def_o1 = parsed_odds[1] if len(parsed_odds) > 1 else 3.00 # Draw
-def_o2 = parsed_odds[6] if len(parsed_odds) > 6 else 1.59 # Under 2.5
-def_o3 = parsed_odds[2] if len(parsed_odds) > 2 else 1.75 # Qualify A
-def_o4 = parsed_odds[3] if len(parsed_odds) > 3 else 2.04 # Qualify B
+# PORTFOLIO CAPITAL DISTRIBUTIONS VARIABLES INPUT
+col_cap, col_floor = st.columns(2)
+with col_cap:
+    bankroll_allocation = st.number_input("Portfolio Bankroll Base ($)", min_value=5.0, value=30.0)
+with col_floor:
+    protection_target = st.slider("Downside Protection Floor (%)", min_value=50, max_value=100, value=95) / 100.0
 
-st.subheader("📈 Adjusted Market Variables")
-c1, c2 = st.columns(2)
-with c1:
-    o1 = st.number_input("Slot 1: 1X2 Match Draw Odds", value=float(def_o1), step=0.01)
-    o3 = st.number_input(f"Slot 3: {team_a} To Qualify Odds", value=float(def_o3), step=0.01)
-with c2:
-    o2 = st.number_input("Slot 2: Asian Total Under 2.5 Odds", value=float(def_o2), step=0.01)
-    o4 = st.number_input(f"Slot 4: {team_b} To Qualify Odds", value=float(def_o4), step=0.01)
+# EXTRACT INITIAL ODDS FROM CLIPBOARD PARSER VS STAKE PARMS PDF DEFAULT
+odds_s1 = scanned_odds_array[1] if len(scanned_odds_array) > 1 else 3.00  # Draw
+odds_s2 = scanned_odds_array[6] if len(scanned_odds_array) > 6 else 1.59  # Under 2.5
+odds_s3 = scanned_odds_array[2] if len(scanned_odds_array) > 2 else 1.75  # Qualify A
+odds_s4 = scanned_odds_array[3] if len(scanned_odds_array) > 3 else 2.04  # Qualify B
 
-# 4. MATHEMATICAL OPTIMIZATION MATRIX ENGINE (Corrected Hedging Logic)
-# Target recovery amounts based on protection configuration setting
-target_recovery = bankroll * risk_floor
+# RENDER PARAMETERS METRIC INPUT CARDS
+st.markdown('<div class="talox-card">', unsafe_allow_html=True)
+st.markdown('<div style="font-size:0.85rem; font-weight:700; color:#94a3b8; margin-bottom:10px;">ADJUST MARKET ODDS MATRIX VALUES</div>', unsafe_allow_html=True)
+c_odds1, c_odds2 = st.columns(2)
+with c_odds1:
+    o1 = st.number_input("Slot 1: Match Draw Line", value=float(odds_s1), step=0.01)
+    o3 = st.number_input(f"Slot 3: {team_a} Floor Line", value=float(odds_s3), step=0.01)
+with c_odds2:
+    o2 = st.number_input("Slot 2: Total Under 2.5 Line", value=float(odds_s2), step=0.01)
+    o4 = st.number_input(f"Slot 4: {team_b} Floor Line", value=float(odds_s4), step=0.01)
+st.markdown('</div>', unsafe_allow_html=True)
 
-# Correct hedge allocation calculation to secure target recovery payouts
-stake3 = round(target_recovery / o3, 2)
-stake4 = round(target_recovery / o4, 2)
+# 4. ROBUST QUANT RECOVERY ENGINE MATH FORMULAS
+recovery_target_value = bankroll_allocation * protection_target
 
-remaining = bankroll - stake3 - stake4
+# Accurate inverse market distribution hedge mapping
+stake3 = round(recovery_target_value / o3, 2)
+stake4 = round(recovery_target_value / o4, 2)
+leftover_capital = bankroll_allocation - stake3 - stake4
 
-if remaining > 0:
-    # 40/60 distribution across primary scoring constraint blocks
-    stake1 = round(remaining * 0.40, 2)
-    stake2 = round(remaining * 0.60, 2)
+if leftover_capital > 0:
+    # 40% / 60% high-yield asset loading splits
+    stake1 = round(leftover_capital * 0.40, 2)
+    stake2 = round(leftover_capital * 0.60, 2)
 else:
     stake1, stake2 = 0.0, 0.0
-    st.error("Error: Protection configurations exceed available portfolio capital. Lower your downside protection target slider.")
+    st.error("Hedge target configuration bounds exceed absolute bankroll base. Lower protection floor slider.")
 
-# 5. LIVE TICKER TRACKING & RULES STATE ENGINE
-st.markdown("---")
-st.subheader("⏱️ Live Game Resolution Tracker")
+# 5. REAL-TIME LIVE DATA RULE TRACKER TICKER STATE SHEET
+st.subheader("📊 Real-Time Rule Execution Ticker")
 
-status_badge = f'<span class="badge-live">LIVE - {match_status}</span>' if match_status in ["In Progress", "First Half", "Second Half", "Halftime"] else f'<span class="badge-ft">{match_status}</span>'
-st.markdown(f"### Current Standing: {team_a} **{score_a} - {score_b}** {team_b} {status_badge}", unsafe_allow_html=True)
+is_live_match = live_state in ["In Progress", "First Half", "Second Half", "Halftime"]
+live_label_tag = "LIVE INCIDENT ENGINE MONITORING" if is_live_match else f"STATUS STATE: {live_state.upper()}"
 
-total_goals = score_a + score_b
-is_draw = (score_a == score_b)
-is_under = (total_goals < 2.5)
+st.markdown(f"""
+    <div class="live-status-bar">
+        <div><span class="pulse-dot"></span><span style="font-size:0.8rem; font-weight:700; color:#ff4444;">{live_label_tag}</span></div>
+        <div style="font-family:'Space Grotesk'; font-weight:700; font-size:1.1rem;">{team_a} {score_a} - {score_b} {team_b}</div>
+    </div>
+""", unsafe_allow_html=True)
 
-# Render state rule trackers dynamically based on active game updates
-c_d, c_u = st.columns(2)
-with c_d:
-    if is_draw:
-        st.markdown('<div class="badge-condition">🟢 Draw Condition: ACTIVE</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="badge-broken">🔴 Draw Condition: BROKEN</div>', unsafe_allow_html=True)
-with c_u:
-    if is_under:
-        st.markdown('<div class="badge-condition">🟢 Under 2.5 Condition: ACTIVE</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="badge-broken">🔴 Under 2.5 Condition: BROKEN</div>', unsafe_allow_html=True)
+calculated_goals = score_a + score_b
+condition_draw_active = (score_a == score_b)
+condition_under_active = (calculated_goals < 2.5)
 
-# 6. EXECUTABLE PORTFOLIO OPTIMIZATION SLIPS (Premium UI Layout)
+# Render Checkbox Badges dynamically using clean custom CSS wrappers
+c_badge1, c_badge2 = st.columns(2)
+with c_badge1:
+    badge_html = '<div class="badge-pass">🟢 DRAW ENVIRONMENT: SECURED</div>' if condition_draw_active else '<div class="badge-fail">🔴 DRAW ENVIRONMENT: BROKEN</div>'
+    st.markdown(badge_html, unsafe_allow_html=True)
+with c_badge2:
+    badge_html = '<div class="badge-pass">🟢 TOTAL GOALS UNDER 2.5: SECURED</div>' if condition_under_active else '<div class="badge-fail">🔴 TOTAL GOALS UNDER 2.5: BROKEN</div>'
+    st.markdown(badge_html, unsafe_allow_html=True)
+
+# 6. PORTFOLIO ALLOCATION WAGER EXECUTION SLIPS
 st.subheader("📋 Executable Optimization Slips")
 
-def draw_card(title, odds, stake):
+def generate_slip_card(label, odd_val, final_wager):
     st.markdown(f"""
-        <div class="slip-container">
-            <span class="slip-odds">@{odds:.2f}</span>
-            <div class="slip-header">{title}</div>
-            <div class="slip-stake">${stake:.2f}</div>
+        <div class="slip-wrapper">
+            <div class="slip-top">
+                <span class="slip-tag">{label}</span>
+                <span class="slip-odds">@{odd_val:.2f}</span>
+            </div>
+            <div class="slip-amt">${final_wager:.2f}</div>
         </div>
     """, unsafe_allow_html=True)
 
-draw_card("Slot 1: Full-Time Match Draw", o1, stake1)
-draw_card("Slot 2: Asian Total Under 2.5", o2, stake2)
-draw_card(f"Slot 3: {team_a} To Qualify (Hedge Floor)", o3, stake3)
-draw_card(f"Slot 4: {team_b} To Qualify (Hedge Floor)", o4, stake4)
+generate_slip_card("Slot 1 Core: Full-Time 1X2 Match Draw", o1, stake1)
+generate_slip_card("Slot 2 Core: Asian Total Goals Under 2.5", o2, stake2)
+generate_slip_card(f"Slot 3 Floor: {team_a} Outright Advance Risk Hedge", o3, stake3)
+generate_slip_card(f"Slot 4 Floor: {team_b} Outright Advance Risk Hedge", o4, stake4)
 
-# 7. HIGH-YIELD SCENARIO MATRIX PROJECTIONS
-st.subheader("🎯 Realized Scenario Matrix Returns")
+# 7. HIGH-YIELD SCENARIO BALANCES RETURNS PREJECTIONS MATRIX
+st.subheader("🎯 Realized Scenario Profit Projections Matrix")
 
-# Mathematical profit projections factoring in the corrected hedging model formulas
-r_cagey = round((stake1 * o1) + (stake2 * o2) - bankroll, 2)
-r_defensive = round((stake2 * o2) + (stake3 * o3) - bankroll, 2)
-r_blowout = round((stake4 * o4) - bankroll, 2)
+net_target_win = round((stake1 * o1) + (stake2 * o2) - bankroll_allocation, 2)
+net_defensive_safety = round((stake2 * o2) + (stake3 * o3) - bankroll_allocation, 2)
+net_blowout_safety = round((stake4 * o4) - bankroll_allocation, 2)
 
-def render_matrix_row(scenario, profit):
-    style_class = "matrix-win" if profit >= 0 else "matrix-loss"
-    sign = "+" if profit >= 0 else ""
+def print_matrix_metric_row(scenario_name, value_net):
+    row_class = "yield-green" if value_net >= 0 else "yield-red"
+    prefix_sign = "+" if value_net >= 0 else ""
     st.markdown(f"""
         <div class="matrix-row">
-            <span style="font-size:0.95rem; font-weight:600;">{scenario}</span>
-            <span class="{style_class}">{sign}${profit:.2f}</span>
+            <span style="font-size:0.85rem; font-weight:600; color:#cbd5e1;">{scenario_name}</span>
+            <span class="{row_class}">{prefix_sign}${value_net:.2f}</span>
         </div>
     """, unsafe_allow_html=True)
 
-render_matrix_row("🎯 Strategic Target Met (Cagey Draw 0-0, 1-1)", r_cagey)
-render_matrix_row("🛡️ Defensive Script Met (Team A wins 1-0, 2-0)", r_defensive)
-render_matrix_row("⚠️ Outlier Script Deviation (Team B Blowout 0-3)", r_blowout)
+print_matrix_metric_row("🎯 Primary Target Achieved (Cagey Tactical Draw 0-0, 1-1)", net_target_win)
+print_matrix_metric_row(f"🛡️ Defensive Protection Clear ({team_a} Edge Win 1-0, 2-0)", net_defensive_safety)
+print_matrix_metric_row(f"⚠️ Outlier Disruption Floor Activated ({team_b} Heavy Blowout Outright)", net_blowout_safety)
