@@ -286,7 +286,8 @@ else:
             
             try:
                 # Direct HTTP Request payload mapping to the Google Gemini AI Studio endpoint
-                endpoint_target = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={ai_secret_key}"
+                # UPDATED: Targets the active 'gemini-2.5-flash' endpoint to bypass the 404 error
+                endpoint_target = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={ai_secret_key}"
                 request_payload = {"contents": [{"parts": [{"text": synthesis_prompt}]}]}
                 request_headers = {"Content-Type": "application/json"}
                 
