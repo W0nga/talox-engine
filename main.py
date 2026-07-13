@@ -7,13 +7,13 @@ from datetime import datetime
 
 # 1. LUXURY DARK MODE WORKSPACE INITIALIZATION
 st.set_page_config(
-    page_title="TALOX | Opta Pro Terminal",
+    page_title="TALOX | AI Portfolio Engine",
     page_icon="⚡",
     layout="centered",
     initial_sidebar_state="expanded"
 )
 
-# Deep Custom CSS Injection to mimic custom-branded UI and build clear financial blocks
+# Deep Custom CSS Injection for Premium Workspace Design
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700&family=Space+Grotesk:wght=500;600;700&display=swap');
@@ -69,7 +69,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# SEEDED CONTINUOUS PERFORMANCE RECORD & MULTI-MARKET LEDGER LOGS
+# PERSISTENT REPOSITORY SIMULATION (Stores continuous multi-market records)
 if "alpha_feed" not in st.session_state:
     st.session_state.alpha_feed = [
         {"game": "France vs Spain", "date": "2026-07-12", "time": "21:00 UTC", "strategy": "Opta Pro Knockout Portfolio", "odds_profile": "Draw@3.10 | U2.5@1.65", "m_1x2": "WON", "m_u25": "WON", "m_btts": "LOST", "status": "Won"},
@@ -78,7 +78,7 @@ if "alpha_feed" not in st.session_state:
         {"game": "Netherlands vs Argentina", "date": "2026-07-05", "time": "20:00 UTC", "strategy": "Alpha Single Total", "odds_profile": "U2.5@1.95", "m_1x2": "LOST", "m_u25": "LOST", "m_btts": "WON", "status": "Lost"}
     ]
 
-# AUTOMATED LIVE SPORTSBOOK PARSER STREAM (ZERO MANUAL WORK)
+# AUTOMATED LIVE SPORTSBOOK PARSER STREAM 
 @st.cache_data(ttl=60)
 def fetch_automated_upcoming_fixtures():
     fixtures = []
@@ -128,11 +128,17 @@ def fetch_automated_upcoming_fixtures():
         ]
     return fixtures
 
-# SIDEBAR CONTROL NAVIGATION INTERFACE
+upcoming_pool = fetch_automated_upcoming_fixtures()
+
+# SIDEBAR CONTROL DECK - 3-WAY NAVIGATION
 st.sidebar.markdown("### 🎛️ TALOX Control Deck")
 app_mode = st.sidebar.radio(
     "Select Optimization Architecture:",
-    ["🛡️ Opta Pro Bulletproof Engine", "🔮 Alpha Predictive Continuous Feed"]
+    [
+        "🛡️ Opta Pro Portfolio Engine", 
+        "🔮 Alpha Predictive Strategy Scan", 
+        "📈 Historical Analytics Ledger"
+    ]
 )
 
 # TOP LEVEL NAVIGATION BRAND DECK
@@ -143,15 +149,14 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-upcoming_pool = fetch_automated_upcoming_fixtures()
 
 # ==================================================================================
-# MODE 1: OPTA PRO BULLETPROOF PORTFOLIO ENGINE (KNOCKOUT PHASE SPEC)
+# WORKSPACE 1: OPTA PRO BULLETPROOF PORTFOLIO ENGINE (KNOCKOUT PHASE SPEC)
 # ==================================================================================
-if app_mode == "🛡️ Opta Pro Bulletproof Engine":
+if app_mode == "🛡️ Opta Pro Portfolio Engine":
     
     st.markdown('<div class="talox-workspace-card">', unsafe_allow_html=True)
-    st.markdown('<div class="talox-card-header">📡 Automated Scheduled Live Feed (No Manual Input)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="talox-card-header">📡 Automated Scheduled Live Feed</div>', unsafe_allow_html=True)
     selected_game = st.selectbox("Select Target Match Vector from Network Streams:", options=upcoming_pool, format_func=lambda x: x["label"])
     
     t_a = selected_game["team_a"]
@@ -164,7 +169,7 @@ if app_mode == "🛡️ Opta Pro Bulletproof Engine":
     parsed_draw, parsed_under_25, parsed_qualify_a, parsed_qualify_b = None, None, None, None
 
     with st.expander("📋 Stake.com Smart Interface Document Parser", expanded=False):
-        raw_pasted_blob = st.text_area("Paste raw text payload straight from Stake interface to overwrite odds parameters:")
+        raw_pasted_blob = st.text_area("Paste raw text payload straight from Stake interface to auto-parse odds parameters:")
         if raw_pasted_blob:
             lines = [line.strip() for line in raw_pasted_blob.split("\n") if line.strip()]
             for idx, text_line in enumerate(lines):
@@ -198,7 +203,6 @@ if app_mode == "🛡️ Opta Pro Bulletproof Engine":
         modifier_active = st.checkbox("Apply Dynamic Modifier (Elite Defensive Injury / Tactical Mismatch)")
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # SET DEFAULT BASELINES OR EXTRACT PARSED VALUES
     o_u25 = st.number_input("Bet 1: Asian Total Under 2.5 Goals Line", value=float(parsed_under_25 if parsed_under_25 else 1.65))
     o_draw = st.number_input("Bet 2: 1X2 Regulation Match Draw Line", value=float(parsed_draw if parsed_draw else 3.10))
     o_qual_a = st.number_input(f"Bet 3: {t_a} Outright To Qualify Floor", value=float(parsed_qualify_a if parsed_qualify_a else 1.75))
@@ -206,7 +210,7 @@ if app_mode == "🛡️ Opta Pro Bulletproof Engine":
 
     # PORTFOLIO ALLOCATION TUNING MATHEMATICS (PORTFOLIO SPEC COMPLIANT)
     if modifier_active:
-        # Shift 5-10% allocation away from Under 2.5 baseline, reinforce floors to 45% cushion target
+        # Shift weight away from Under 2.5 baseline, reinforce floors to 45% cushion target
         floor_target = 0.45 
         under_share = 0.50
         draw_share = 0.50
@@ -242,7 +246,7 @@ if app_mode == "🛡️ Opta Pro Bulletproof Engine":
     st.table(pd.DataFrame(portfolio_data))
 
     # SCENARIO MATRIX LAYOUT
-    st.markdown('<div class="talox-card-header" style="margin-top:25px;">💰 Scenario Matrix: What You Will Win/Lose</div>', unsafe_allow_html=True)
+    st.markdown('<div class="talox-card-header" style="margin-top:25px;">💰 Scenario Matrix: Financial States</div>', unsafe_allow_html=True)
     
     pay_u25 = stake_1 * o_u25
     pay_draw = stake_2 * o_draw
@@ -313,33 +317,25 @@ if app_mode == "🛡️ Opta Pro Bulletproof Engine":
                 except Exception as e:
                     st.error(f"Processing error: {str(e)}")
 
-# ==================================================================================
-# MODE 2: ALPHA PREDICTIVE CONTINUOUS FEED ENGINE
-# ==================================================================================
-else:
-    total_scans = len(st.session_state.alpha_feed)
-    won_scans = len([x for x in st.session_state.alpha_feed if x["status"] == "Won"])
-    global_acc = round((won_scans / total_scans) * 100, 1) if total_scans > 0 else 0.0
 
-    st.markdown(f"""
-        <div class="kpi-container">
-            <div class="kpi-card"><div class="kpi-val" style="color:#38bdf8;">{total_scans}</div><div class="kpi-lbl">Total Scanned Logs</div></div>
-            <div class="kpi-card"><div class="kpi-val">{global_acc}%</div><div class="kpi-lbl">Global AI Accuracy %</div></div>
-            <div class="kpi-card"><div class="kpi-val" style="color:#a855f7;">{won_scans}</div><div class="kpi-lbl">Profitable Striking Hits</div></div>
-        </div>
-    """, unsafe_allow_html=True)
-
+# ==================================================================================
+# WORKSPACE 2: ALPHA PREDICTIVE STRATEGY SCAN (GENERATION & COMMITMENT PANEL)
+# ==================================================================================
+elif app_mode == "🔮 Alpha Predictive Strategy Scan":
+    
     st.markdown('<div class="talox-workspace-card">', unsafe_allow_html=True)
     st.markdown('<div class="talox-card-header">🔮 Auto AI Selection Strategy Scan</div>', unsafe_allow_html=True)
     alpha_game = st.selectbox("Select Target Upcoming Fixture to Process Strategy:", options=upcoming_pool, format_func=lambda x: x["label"], key="alpha_game_sel")
     
     st.markdown("---")
+    st.markdown("**Populate Current Bookmaker Market Odds:**")
     col_o1, col_o2, col_o3 = st.columns(3)
     with col_o1: alpha_o_home = st.number_input("1X2 Home Outright Odds", value=2.20)
     with col_o2: alpha_o_u25 = st.number_input("Asian Under 2.5 Market Odds", value=1.85)
     with col_o3: alpha_o_btts = st.number_input("Both Teams To Score Odds", value=1.70)
     st.markdown('</div>', unsafe_allow_html=True)
 
+    # Implied Probabilities vs Bookmaker Delta confidence simulator
     p_home = min(int(85 + (alpha_o_home * 2)), 97)
     p_u25 = min(int(79 + (alpha_o_u25 * 3)), 94)
     p_btts = min(int(81 + (alpha_o_btts * 2)), 95)
@@ -383,41 +379,88 @@ else:
                 "game": f"{alpha_game['team_a']} vs {alpha_game['team_b']}",
                 "date": alpha_game['date'],
                 "time": alpha_game['time'],
-                "strategy": f"Auto AI Pick: {assigned_lbl}",
+                "strategy": f"Alpha Engine: {assigned_lbl}",
                 "odds_profile": f"Target Line @{final_odds:.2f}",
                 "m_1x2": "WON" if max_p == p_home else "LOST",
                 "m_u25": "WON" if max_p == p_u25 else "LOST",
                 "m_btts": "WON" if max_p == p_btts else "LOST",
                 "status": random.choice(["Won", "Won", "Lost"])
             })
-            st.rerun()
+            st.success("🎯 Selection logged successfully to the Performance Workspace ledger!")
 
-    # CONTINUOUS REPOSITORY DISPLAYING EXPLICIT RESULTS PER INDIVIDUAL MARKET
-    st.markdown("---")
+    # QUANT RATIONALE BRIEFING GENERATION
+    if alpha_key_input and st.button("Generate Quant Rationale Briefing"):
+        with st.spinner("Analyzing market variances..."):
+            alpha_prompt = f"""
+            Analyze sports portfolio positioning line for match {alpha_game['team_a']} vs {alpha_game['team_b']}. 
+            Selected Top Target Strategy Line: {assigned_lbl} at odds of {final_odds}. Confidence stands at {final_conf}%.
+            Provide a hyper-condensed analytics briefing under 80 words. Exactly 1-2 sentence bullets for:
+            - **Target Strategic Edge**: Rationale for allocation priority.
+            - **Liquidity Volatility**: Primary friction metrics.
+            No preamble or summarizing commentary.
+            """
+            try:
+                res = requests.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{alpha_model_choice}:generateContent?key={alpha_key_input}",
+                    json={"contents": [{"parts": [{"text": alpha_prompt}]}]},
+                    timeout=30
+                )
+                ai_briefing_text = res.json()["candidates"][0]["content"]["parts"][0]['text']
+                st.markdown(f"""
+                    <div class="talox-workspace-card" style="border-color:#a855f7; background:#0c091a;">
+                        <div class="talox-card-header" style="color:#c084fc;">🔮 Alpha Algorithmic Rationale Briefing</div>
+                        <div style="font-size:0.85rem; line-height:1.5; color:#cbd5e1;">{ai_briefing_text}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            except Exception as system_fault:
+                st.error(f"AI Core Matrix timeout or processing variance detected: {str(system_fault)}")
+
+
+# ==================================================================================
+# WORKSPACE 3: HISTORICAL ANALYTICS & LEDGER WORKSPACE (THE "SECOND PAGE")
+# ==================================================================================
+else:
+    # GLOBAL TRACKING SCOREBOARD MACROS
+    total_scans = len(st.session_state.alpha_feed)
+    won_scans = len([x for x in st.session_state.alpha_feed if x["status"] == "Won"])
+    global_acc = round((won_scans / total_scans) * 100, 1) if total_scans > 0 else 0.0
+
+    st.markdown(f"""
+        <div class="kpi-container">
+            <div class="kpi-card"><div class="kpi-val" style="color:#38bdf8;">{total_scans}</div><div class="kpi-lbl">Total Scanned Logs</div></div>
+            <div class="kpi-card"><div class="kpi-val">{global_acc}%</div><div class="kpi-lbl">Global AI Accuracy %</div></div>
+            <div class="kpi-card"><div class="kpi-val" style="color:#a855f7;">{won_scans}</div><div class="kpi-lbl">Profitable Striking Hits</div></div>
+        </div>
+    """, unsafe_allow_html=True)
+
     st.subheader("📡 Continuous Alpha Live Prediction Stream Log")
     st.markdown("Real-time chronological repository displaying explicit multi-market settlement parameters.")
 
-    for item in st.session_state.alpha_feed:
-        is_won = item["status"] == "Won"
-        status_badge = f'<span class="ledger-pill-green">✅ SETTLED PROFITABLE</span>' if is_won else f'<span class="ledger-pill-red">❌ SETTLED OVERALL LOSS</span>'
-        
-        st.markdown(f"""
-            <div class="ledger-card" style="border-left: 3px solid {'#34d399' if is_won else '#f87171'}; padding-top:12px; padding-bottom:12px;">
-                <div class="ledger-title-bar" style="font-size:0.88rem; margin-bottom:2px;">
-                    <div>{item["game"]}</div>
-                    <div>{status_badge}</div>
+    if not st.session_state.alpha_feed:
+        st.info("Ledger repository is currently unpopulated. Commit data selections via active workspaces.")
+    else:
+        for item in st.session_state.alpha_feed:
+            is_won = item["status"] == "Won"
+            status_badge = f'<span class="ledger-pill-green">✅ SETTLED PROFITABLE</span>' if is_won else f'<span class="ledger-pill-red">❌ SETTLED OVERALL LOSS</span>'
+            
+            st.markdown(f"""
+                <div class="ledger-card" style="border-left: 3px solid {'#34d399' if is_won else '#f87171'}; padding-top:12px; padding-bottom:12px;">
+                    <div class="ledger-title-bar" style="font-size:0.95rem; margin-bottom:2px;">
+                        <div>{item["game"]}</div>
+                        <div>{status_badge}</div>
+                    </div>
+                    <div style="font-size:0.7rem; color:#64748b; text-transform:uppercase; margin-bottom:8px;">
+                        🗓️ Schedule Matrix: {item["date"]} @ {item["time"]} | Strategy Core: {item["strategy"]}
+                    </div>
+                    
+                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.04); text-align:center; font-size:0.7rem;">
+                        <div><span style="color:#64748b; display:block; font-size:0.58rem; text-transform:uppercase; margin-bottom:2px;">1X2 Market</span><b style="color:{'#34d399' if item['m_1x2']=='WON' else '#f87171'}">{item['m_1x2']}</b></div>
+                        <div><span style="color:#64748b; display:block; font-size:0.58rem; text-transform:uppercase; margin-bottom:2px;">Under 2.5 Market</span><b style="color:{'#34d399' if item['m_u25']=='WON' else '#f87171'}">{item['m_u25']}</b></div>
+                        <div><span style="color:#64748b; display:block; font-size:0.58rem; text-transform:uppercase; margin-bottom:2px;">BTTS Market</span><b style="color:{'#34d399' if item['m_btts']=='WON' else '#f87171'}">{item['m_btts']}</b></div>
+                    </div>
+                    <div style="font-size:0.75rem; color:#cbd5e1; margin-top:8px; display:flex; justify-content:space-between;">
+                        <span>Market Metric Profile: <b style="color:#38bdf8;">{item["odds_profile"]}</b></span>
+                        <span style="color:#64748b; font-size:0.68rem;">TALOX ENGINE VERIFIED</span>
+                    </div>
                 </div>
-                <div style="font-size:0.68rem; color:#64748b; text-transform:uppercase; margin-bottom:8px;">
-                    🗓️ Schedule Matrix: {item["date"]} @ {item["time"]} | Strategy Core: {item["strategy"]}
-                </div>
-                
-                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; background:rgba(255,255,255,0.02); padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.04); text-align:center; font-size:0.7rem;">
-                    <div><span style="color:#64748b; display:block; font-size:0.6rem; text-transform:uppercase;">1X2 Market</span><b style="color:{'#34d399' if item['m_1x2']=='WON' else '#f87171'}">{item['m_1x2']}</b></div>
-                    <div><span style="color:#64748b; display:block; font-size:0.6rem; text-transform:uppercase;">Under 2.5 Market</span><b style="color:{'#34d399' if item['m_u25']=='WON' else '#f87171'}">{item['m_u25']}</b></div>
-                    <div><span style="color:#64748b; display:block; font-size:0.6rem; text-transform:uppercase;">BTTS Market</span><b style="color:{'#34d399' if item['m_btts']=='WON' else '#f87171'}">{item['m_btts']}</b></div>
-                </div>
-                <div style="font-size:0.72rem; color:#cbd5e1; margin-top:6px; display:flex; justify-content:space-between;">
-                    <span>Market Metric Profile: <b style="color:#38bdf8;">{item["odds_profile"]}</b></span>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
